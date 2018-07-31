@@ -84,6 +84,10 @@ COURSE_LEVEL_TIMEOUT_SECONDS = 1200
 VIDEO_LEVEL_TIMEOUT_SECONDS = 300
 
 
+def enqueue_update_thumbnail_tasks(course_video_ids):
+    pass
+
+
 @chord_task(bind=True, routing_key=settings.VIDEO_TRANSCRIPT_MIGRATIONS_JOB_QUEUE)
 def task_status_callback(self, results, revision,  # pylint: disable=unused-argument
                          course_id, command_run, video_location):
