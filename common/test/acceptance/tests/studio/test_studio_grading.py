@@ -130,3 +130,52 @@ class GradingPageTest(StudioCourseTest):
             grade_ranges,
             'expected range: 0-3, not found in grade ranges:{}'.format(grade_ranges)
         )
+
+    def test_staff_can_set_weight_to_assignment(self):
+        """
+        Scenario: Users can set weight to Assignment types
+            Given I have opened a new course in Studio
+            And I am viewing the grading settings
+            When I add a new assignment type "New Type"
+            And I set the assignment weight to "7"
+            And I press the "Save" notification button
+            Then the assignment weight is displayed as "7"
+            And I reload the page
+            Then the assignment weight is displayed as "7"
+        """
+        assignment_type = 'New Type'
+        self.grading_page.add_new_assignment_type()
+        self.grading_page.change_assignment_name('', assignment_type)
+        self.grading_page.set_weight(assignment_type, '7')
+        self.grading_page.save()
+        assignment_weight = self.grading_page.get_assignment_weight(assignment_type)
+        self.assertEqual(assignment_weight, '7')
+        self.grading_page.refresh_and_wait_for_load()
+        assignment_weight = self.grading_page.get_assignment_weight(assignment_type)
+        self.assertEqual(assignment_weight, '7')
+
+    def test_settings_are_persisted_on_save_only(self):
+        """
+        Scenario: Settings are only persisted when saved
+            Given I have populated a new course in Studio
+            And I am viewing the grading settings
+            When I change assignment type "Homework" to "New Type"
+            Then I do not see the changes persisted on refresh
+        """
+        self.grading_page.change_assignment_name('Homework', 'New Type')
+        self.grading_page.refresh_and_wait_for_load()
+        self.assertIn('Homework', self.grading_page.get_assignment_names)
+
+    def test_settings_are_reset_on_cancel(self):
+        """
+        Scenario: Settings are reset on cancel
+            Given I have populated a new course in Studio
+            And I am viewing the grading settings
+            When I change assignment type "Homework" to "New Type"
+            And I press the "Cancel" notification button
+            Then I see the assignment type "Homework"
+        """
+        self.grading_page.change_assignment_name('Homework', 'New Type')
+        self.grading_page.cancel()
+        assignment_names = self.grading_page.get_assignment_names
+        self.assertIn('Homework', assignment_names)
