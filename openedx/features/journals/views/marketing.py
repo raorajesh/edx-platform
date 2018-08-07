@@ -1,4 +1,5 @@
 """ Journal bundle about page's view """
+import datetime
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.http import Http404
@@ -6,7 +7,9 @@ from django.http import Http404
 from edxmako.shortcuts import render_to_response
 from openedx.core.djangoapps.catalog.models import CatalogIntegration
 from openedx.core.djangoapps.commerce.utils import ecommerce_api_client
+from lms.djangoapps.courseware.views import views as courseware_views
 from openedx.features.journals.api import get_journal_bundles, get_journals_root_url
+from openedx.features.journals.api import fetch_journal_access
 from lms.djangoapps.commerce.utils import EcommerceService
 
 
@@ -26,6 +29,25 @@ def bundle_about(request, bundle_uuid):
         'uses_bootstrap': True,
     }
     return render_to_response('journals/bundle_about.html', context)
+
+
+def render_xblock_by_journal_access(request, usage_key_string):
+    user_access = False
+    username = request.GET.get('username')
+    journal_uuid = request.GET.get('journal_uuid')
+    try:
+        journal_access_list = fetch_journal_access(None, User.objects.get(username=username))
+    except User.DoesNotExist:
+        journal_access_list = []
+    for journal_access in journal_access_list:
+        if journal_uuid == journal_access['journal']['uuid']:
+            expiration_date = datetime.datetime.strptime(journal_access['expiration_date'], '%Y-%m-%d')
+            now = datetime.datetime.now()
+            if expiration_date > now:
+                user_access = True
+    if not user_access:
+        raise Http404("User doesn't have access for this journal.")
+    return courseware_views.render_xblock(request, usage_key_string, check_if_enrolled=False)
 
 
 def extend_bundle(bundle):
