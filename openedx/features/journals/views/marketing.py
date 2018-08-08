@@ -1,16 +1,16 @@
 """ Journal bundle about page's view """
 import datetime
+
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.http import Http404
 
 from edxmako.shortcuts import render_to_response
+from lms.djangoapps.courseware.views import views as courseware_views
+from lms.djangoapps.commerce.utils import EcommerceService
 from openedx.core.djangoapps.catalog.models import CatalogIntegration
 from openedx.core.djangoapps.commerce.utils import ecommerce_api_client
-from lms.djangoapps.courseware.views import views as courseware_views
-from openedx.features.journals.api import get_journal_bundles, get_journals_root_url
-from openedx.features.journals.api import fetch_journal_access
-from lms.djangoapps.commerce.utils import EcommerceService
+from openedx.features.journals.api import get_journal_bundles, get_journals_root_url, fetch_journal_access
 
 
 def bundle_about(request, bundle_uuid):
@@ -32,11 +32,17 @@ def bundle_about(request, bundle_uuid):
 
 
 def render_xblock_by_journal_access(request, usage_key_string):
+    """
+    Its a wrapper function for lms.djangoapps.courseware.views.views.render_xblock.
+    It disables the 'check_if_enrolled' flag by checking that user has access
+    of given journal.
+    """
     user_access = False
     date_format = '%Y-%m-%d'
+    journal_uuid = request.GET.get('journal_uuid')
     journal_access_list = fetch_journal_access(request.site, request.user)
     for journal_access in journal_access_list:
-        if request.GET.get('journal_uuid') == journal_access['journal']['uuid']:
+        if journal_access['journal']['uuid'] == journal_uuid:
             expiration_date = datetime.datetime.strptime(journal_access['expiration_date'], date_format)
             now = datetime.datetime.strptime(datetime.datetime.now().strftime(date_format), date_format)
             if expiration_date >= now:
