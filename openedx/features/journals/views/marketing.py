@@ -33,17 +33,13 @@ def bundle_about(request, bundle_uuid):
 
 def render_xblock_by_journal_access(request, usage_key_string):
     user_access = False
-    username = request.GET.get('username')
-    journal_uuid = request.GET.get('journal_uuid')
-    try:
-        journal_access_list = fetch_journal_access(None, User.objects.get(username=username))
-    except User.DoesNotExist:
-        journal_access_list = []
+    date_format = '%Y-%m-%d'
+    journal_access_list = fetch_journal_access(request.site, request.user)
     for journal_access in journal_access_list:
-        if journal_uuid == journal_access['journal']['uuid']:
-            expiration_date = datetime.datetime.strptime(journal_access['expiration_date'], '%Y-%m-%d')
-            now = datetime.datetime.now()
-            if expiration_date > now:
+        if request.GET.get('journal_uuid') == journal_access['journal']['uuid']:
+            expiration_date = datetime.datetime.strptime(journal_access['expiration_date'], date_format)
+            now = datetime.datetime.strptime(datetime.datetime.now().strftime(date_format), date_format)
+            if expiration_date >= now:
                 user_access = True
     if not user_access:
         raise Http404("User doesn't have access for this journal.")

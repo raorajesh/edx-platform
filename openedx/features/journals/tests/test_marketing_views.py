@@ -60,6 +60,30 @@ class JournalBundleViewTest(CacheIsolationTestCase, SiteMixin):
         self.assertContains(response, journal_bundle["courses"][0]["course_runs"][0]["title"])
 
 
+@mock.patch.dict(settings.FEATURES, {"JOURNALS_ENABLED": True})
+class RenderXblockByJournalAccessViewTest(CacheIsolationTestCase, SiteMixin):
+    """ Tests for views responsible for rendering xblock in journals """
+
+    @override_switch(JOURNAL_INTEGRATION, True)
+    @mock.patch('openedx.features.journals.views.marketing.fetch_journal_access')
+    def test_without_journal_access(self, mocked_journal_access):
+        """
+        Test the marketing page without journal bundle data.
+        """
+        mocked_journal_access.return_value = []
+        response = self.client.get(
+            path=reverse(
+                "openedx.journals.render_xblock_by_journal_access",
+                kwargs={
+                    "usage_key_string":
+                        "block-v1:edX+DemoX+Demo_Course+type@video+block@5c90cffecd9b48b188cbfea176bf7fe9"
+                },
+                journal_uuid=str(uuid.uuid4())
+            )
+        )
+        self.assertEqual(response.status_code, 404)
+
+
 @attr(shard=1)
 @mock.patch.dict(settings.FEATURES, {"JOURNALS_ENABLED": True})
 class JournalIndexViewTest(SiteMixin, ModuleStoreTestCase):
