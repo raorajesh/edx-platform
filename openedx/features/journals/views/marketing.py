@@ -1,17 +1,24 @@
 """ Journal bundle about page's view """
+import logging
 import datetime
 
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.core.cache import cache
 from django.http import Http404
 
 from edxmako.shortcuts import render_to_response
-from lms.djangoapps.courseware.views import views as courseware_views
+from opaque_keys.edx.keys import CourseKey, UsageKey
+from lms.djangoapps.courseware.views.views import render_xblock
 from lms.djangoapps.commerce.utils import EcommerceService
 from openedx.core.djangoapps.catalog.models import CatalogIntegration
 from openedx.core.djangoapps.commerce.utils import ecommerce_api_client
 from openedx.features.journals.api import get_journal_bundles, get_journals_root_url, fetch_journal_access
 
+XBLOCK_JOURNAL_ACCESS_KEY = "journal_access_for_{username}_{journal_uuid}_{block_id}"
+XBLOCK_JOURNAL_ACCESS_KEY_TIMEOUT = 120
+
+log = logging.getLogger(__name__)
 
 def bundle_about(request, bundle_uuid):
     """
@@ -34,14 +41,26 @@ def bundle_about(request, bundle_uuid):
 def render_xblock_by_journal_access(request, usage_key_string):
     """
     Its a wrapper function for lms.djangoapps.courseware.views.views.render_xblock.
-    It disables the 'check_if_enrolled' flag by checking that user has access
-    of given journal.
+    It disables 'check_if_enrolled' flag by checking that user has access on journal.
     """
     user_access = False
     date_format = '%Y-%m-%d'
     journal_uuid = request.GET.get('journal_uuid')
-    journal_access_list = fetch_journal_access(request.site, request.user)
-    for journal_access in journal_access_list:
+    block_id = UsageKey.from_string(usage_key_string).block_id
+    cache_key = XBLOCK_JOURNAL_ACCESS_KEY.format(
+        username=request.user.username,
+        journal_uuid=journal_uuid,
+        block_id=block_id
+    )
+    journal_access_data = cache.get(cache_key)
+    if not journal_access_data:
+        journal_access_data = fetch_journal_access(
+            request.site,
+            request.user,
+            block_id=block_id
+        )
+        cache.set(cache_key, journal_access_data, XBLOCK_JOURNAL_ACCESS_KEY_TIMEOUT)
+    for journal_access in journal_access_data:
         if journal_access['journal']['uuid'] == journal_uuid:
             expiration_date = datetime.datetime.strptime(journal_access['expiration_date'], date_format)
             now = datetime.datetime.strptime(datetime.datetime.now().strftime(date_format), date_format)
@@ -49,7 +68,7 @@ def render_xblock_by_journal_access(request, usage_key_string):
                 user_access = True
     if not user_access:
         raise Http404("User doesn't have access for this journal.")
-    return courseware_views.render_xblock(request, usage_key_string, check_if_enrolled=False)
+    return render_xblock(request, usage_key_string, check_if_enrolled=False)
 
 
 def extend_bundle(bundle):
