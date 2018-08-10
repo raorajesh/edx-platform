@@ -52,22 +52,21 @@ class TestUtils(unittest.TestCase):
     shard = 2
 
     ONLY_ROOTS = [
-        draft_node_constructor(Mock(), 'url1', 'vertical'),
-        draft_node_constructor(Mock(), 'url2', 'sequential'),
+        ('url1', 'vertical'),
+        ('url2', 'sequential'),
     ]
     ONLY_ROOTS_URLS = ['url1', 'url2']
 
     SOME_TREES = [
-        draft_node_constructor(Mock(), 'child_1', 'vertical_1'),
-        draft_node_constructor(Mock(), 'child_2', 'vertical_1'),
-        draft_node_constructor(Mock(), 'vertical_1', 'sequential_1'),
+        ('child_1', 'vertical_1'),
+        ('child_2', 'vertical_1'),
+        ('vertical_1', 'sequential_1'),
 
-        draft_node_constructor(Mock(), 'child_3', 'vertical_2'),
-        draft_node_constructor(Mock(), 'child_4', 'vertical_2'),
-        draft_node_constructor(Mock(), 'vertical_2', 'grandparent_vertical'),
-        draft_node_constructor(Mock(), 'grandparent_vertical', 'great_grandparent_vertical'),
+        ('child_3', 'vertical_2'),
+        ('child_4', 'vertical_2'),
+        ('vertical_2', 'grandparent_vertical'),
+        ('grandparent_vertical', 'great_grandparent_vertical'),
     ]
-
     SOME_TREES_ROOTS_URLS = ['vertical_1', 'grandparent_vertical']
 
     @ddt.data(
@@ -77,6 +76,7 @@ class TestUtils(unittest.TestCase):
     @ddt.unpack
     def test_get_draft_subtree_roots(self, module_nodes, expected_roots_urls):
         """tests for get_draft_subtree_roots"""
+        module_nodes = draft_node_constructor(Mock(), module_nodes[0], module_nodes[1])
         subtree_roots_urls = [root.url for root in get_draft_subtree_roots(module_nodes)]
         # check that we return the expected urls
         self.assertEqual(set(subtree_roots_urls), set(expected_roots_urls))
