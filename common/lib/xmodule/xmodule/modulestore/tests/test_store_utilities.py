@@ -74,9 +74,11 @@ class TestUtils(unittest.TestCase):
         (SOME_TREES, SOME_TREES_ROOTS_URLS),
     )
     @ddt.unpack
-    def test_get_draft_subtree_roots(self, module_nodes, expected_roots_urls):
+    def test_get_draft_subtree_roots(self, node_arguments_list, expected_roots_urls):
         """tests for get_draft_subtree_roots"""
-        module_nodes = draft_node_constructor(Mock(), module_nodes[0], module_nodes[1])
+        module_nodes = []
+        for node_args in node_arguments_list:
+            module_nodes.append(draft_node_constructor(Mock(), module_nodes[0], module_nodes[1]))
         subtree_roots_urls = [root.url for root in get_draft_subtree_roots(module_nodes)]
         # check that we return the expected urls
         self.assertEqual(set(subtree_roots_urls), set(expected_roots_urls))
