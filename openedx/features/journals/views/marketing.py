@@ -1,5 +1,4 @@
 """ Journal bundle about page's view """
-import logging
 import datetime
 
 from django.conf import settings
@@ -16,9 +15,8 @@ from openedx.core.djangoapps.commerce.utils import ecommerce_api_client
 from openedx.features.journals.api import get_journal_bundles, get_journals_root_url, fetch_journal_access
 
 XBLOCK_JOURNAL_ACCESS_KEY = "journal_access_for_{username}_{journal_uuid}_{block_id}"
-XBLOCK_JOURNAL_ACCESS_KEY_TIMEOUT = 120
+XBLOCK_JOURNAL_ACCESS_KEY_TIMEOUT = 3600
 
-log = logging.getLogger(__name__)
 
 def bundle_about(request, bundle_uuid):
     """

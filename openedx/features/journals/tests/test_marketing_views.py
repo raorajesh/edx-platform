@@ -6,6 +6,7 @@ from nose.plugins.attrib import attr
 
 from django.conf import settings
 from django.core.urlresolvers import reverse
+from django.http import HttpResponse
 
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase
 from openedx.core.djangoapps.site_configuration.tests.mixins import SiteMixin
@@ -97,12 +98,14 @@ class RenderXblockByJournalAccessViewTest(CacheIsolationTestCase, SiteMixin):
         """
         journal_uuid = str(uuid.uuid4())
         mocked_journal_access.return_value = get_mocked_journal_access(journal_uuid=journal_uuid)
+        mocked_render_xblock.return_value = HttpResponse("")
         path = "{path}?journal_uuid={journal_uuid}".format(
             path=self.path,
             journal_uuid=journal_uuid
         )
         response = self.client.get(path=path)
-        #mocked_render_xblock.assert_called_once()
+        self.assertEqual(response.status_code, 200)
+        mocked_render_xblock.assert_called_once()
 
 
 @attr(shard=1)
