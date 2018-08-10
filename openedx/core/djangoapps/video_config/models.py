@@ -205,6 +205,7 @@ class VideoThumbnailSetting(ConfigurationModel):
         )
     command_run = PositiveIntegerField(default=0)
     batch_size = PositiveIntegerField(default=0)
+    videos_per_task = PositiveIntegerField(default=0)
     commit = BooleanField(
         default=False,
         help_text="Dry-run or commit."

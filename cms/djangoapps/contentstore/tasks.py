@@ -39,6 +39,7 @@ import dogstats_wrapper as dog_stats_api
 from contentstore.courseware_index import CoursewareSearchIndexer, LibrarySearchIndexer, SearchIndexingError
 from contentstore.storage import course_import_export_storage
 from contentstore.utils import initialize_permissions, reverse_usage_url
+from contentstore.video_utils import scrape_youtube_thumbnail
 from course_action_state.models import CourseRerunState
 from models.settings.course_metadata import CourseMetadata
 from openedx.core.djangoapps.embargo.models import CountryAccessRule, RestrictedCourse
@@ -84,9 +85,27 @@ COURSE_LEVEL_TIMEOUT_SECONDS = 1200
 VIDEO_LEVEL_TIMEOUT_SECONDS = 300
 
 
-def enqueue_update_thumbnail_tasks(course_video_ids):
-    pass
+def enqueue_update_thumbnail_tasks(course_video_ids, videos_per_task):
 
+    course_videos_chunks = [course_video_ids[i:i + videos_per_task]
+                            for i in xrange(0, len(course_video_ids), videos_per_task)]
+    for chunk in course_videos_chunks:
+        for course_id, edx_video_id, youtube_id in chunk:
+            task_scrape_youtube_thumbnail(course_id, edx_video_id, youtube_id)
+
+
+@task()
+def task_scrape_youtube_thumbnail(course_id, edx_video_id, youtube_id):
+    try:
+        scrape_youtube_thumbnail(course_id, edx_video_id, youtube_id)
+    except Exception:
+        LOGGER.exception(
+            "[Video Thumbnails] Scraping thumbnail failed for edx_video_id [%s] with youtube_id [%s] in course [%s]",
+            edx_video_id,
+            youtube_id,
+            course_id
+        )
+        raise
 
 @chord_task(bind=True, routing_key=settings.VIDEO_TRANSCRIPT_MIGRATIONS_JOB_QUEUE)
 def task_status_callback(self, results, revision,  # pylint: disable=unused-argument

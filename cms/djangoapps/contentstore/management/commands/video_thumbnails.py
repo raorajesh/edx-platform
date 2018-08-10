@@ -42,7 +42,6 @@ class Command(BaseCommand):
         command_settings = self._latest_settings()
         commit = command_settings.commit
         if command_settings.all_course_videos:
-
             all_course_video_ids = get_course_video_ids_with_youtube_profile()
             updated_course_videos = UpdatedCourseVideos.objects.all().values_list('course_id', 'edx_video_id')
             non_updated_course_videos = [
@@ -90,10 +89,13 @@ class Command(BaseCommand):
         Invokes the video thumbnail enqueue function.
         """
         command_settings = self._latest_settings()
+        videos_per_task = command_settings.videos_per_task\
+            if command_settings.videos_per_task\
+            else command_settings.batch_size
         course_video_batch, commit = self._get_command_options()
         command_run = command_settings.increment_run() if commit else -1
         if commit:
-            enqueue_update_thumbnail_tasks(course_video_ids=course_video_batch)
+            enqueue_update_thumbnail_tasks(course_video_ids=course_video_batch, videos_per_task=videos_per_task)
         else:
             log.info(
                 '[Video Thumbnails] Selected Course Videos: {course_videos} '
