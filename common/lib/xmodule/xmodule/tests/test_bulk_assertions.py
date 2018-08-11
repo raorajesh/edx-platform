@@ -3,7 +3,7 @@ import itertools
 from xmodule.tests import BulkAssertionTest, BulkAssertionError
 
 ASSERTION_METHODS_DICT = {
-    "GETITEM_SPECIAL_METHOD": {}.__getitem__
+    "GETITEM_SPECIAL_METHOD": {}.__getitem__,
     "LAMBDA": lambda: None
 }
 
