@@ -78,7 +78,7 @@ class TestUtils(unittest.TestCase):
         """tests for get_draft_subtree_roots"""
         module_nodes = []
         for node_args in node_arguments_list:
-            module_nodes.append(draft_node_constructor(Mock(), module_nodes[0], module_nodes[1]))
+            module_nodes.append(draft_node_constructor(Mock(), node_args[0], node_args[1]))
         subtree_roots_urls = [root.url for root in get_draft_subtree_roots(module_nodes)]
         # check that we return the expected urls
         self.assertEqual(set(subtree_roots_urls), set(expected_roots_urls))
