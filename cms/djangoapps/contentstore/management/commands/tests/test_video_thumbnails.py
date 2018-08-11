@@ -3,7 +3,7 @@
 Tests for course video thumbnails management command.
 """
 import logging
-from mock import patch
+from mock import Mock, patch
 from django.core.management import call_command, CommandError
 from django.test import TestCase
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
@@ -48,9 +48,10 @@ class TestVideoThumbnails(ModuleStoreTestCase):
         self.course_2 = CourseFactory.create()
 
     @patch('contentstore.management.commands.video_thumbnails.get_course_video_ids_with_youtube_profile')
-    def test_video_thumbnails_call_count_without_commit(self, mock_course_videos):
+    @patch('contentstore.management.commands.video_thumbnails.enqueue_update_thumbnail_tasks')
+    def test_video_thumbnails_without_commit(self, mock_enqueue_thumbnails, mock_course_videos):
         """
-        Test without commit.
+        Test that when command is run without commit, correct information is logged.
         """
         course_videos = [
             (self.course.id, 'super-soaker', 'https://www.youtube.com/watch?v=OscRe3pSP80'),
@@ -78,10 +79,14 @@ class TestVideoThumbnails(ModuleStoreTestCase):
                 )
             )
 
+            # Verify that `enqueue_update_thumbnail_tasks` is not called.
+            self.assertFalse(mock_enqueue_thumbnails.called)
+
     @patch('contentstore.management.commands.video_thumbnails.get_course_video_ids_with_youtube_profile')
-    def test_video_thumbnails_call_count_with_commit(self, mock_course_videos):
+    @patch('contentstore.management.commands.video_thumbnails.enqueue_update_thumbnail_tasks')
+    def test_video_thumbnails_with_commit(self, mock_enqueue_thumbnails, mock_course_videos):
         """
-        Test updating thumbnails with commit
+        Test that when command is run with with commit, it works as expected.
         """
         course_videos = [
             (self.course.id, 'super-soaker', 'https://www.youtube.com/watch?v=OscRe3pSP80'),
@@ -100,3 +105,30 @@ class TestVideoThumbnails(ModuleStoreTestCase):
                     'Videos(update-in-process): 2')
                 )
             )
+            # Verify that `enqueue_update_thumbnail_tasks` is called.
+            self.assertFalse(mock_enqueue_thumbnails.called)
+
+    @patch('contentstore.management.commands.video_thumbnails.get_course_video_ids_with_youtube_profile')
+    @patch('contentstore.video_utils.download_youtube_video_thumbnail')#Mock(side_effect=Exception())
+    def test_video_thumbnails_scraping_failed(self, mock_scrape_thumbnails, mock_course_videos):
+        """
+        Test that when scraping fails, it is handled correclty.
+        """
+        course_videos = [
+            (self.course.id, 'super-soaker', 'https://www.youtube.com/watch?v=OscRe3pSP80'),
+            (self.course_2.id, 'medium-soaker', 'https://www.youtube.com/watch?v=OscRe3pSP81')
+        ]
+        mock_scrape_thumbnails.side_effect = Exception('error')
+        mock_course_videos.return_value = course_videos
+        setup_video_thumbnails_config(commit=True, all_course_videos=True)
+
+        with self.assertRaises(Exception), LogCapture(LOGGER_NAME, level=logging.INFO) as logger:
+            call_command('video_thumbnails', '--from-settings')
+            # Verify that command information correctly logged.
+            logger.check((
+                LOGGER_NAME, 'ERROR',
+                ("[Video Thumbnails] Scraping thumbnail failed for edx_video_id [%s] with youtube_id [%s] in course [%s]",
+                'super-soaker',
+                'OscRe3pSP80',
+                self.course.id)
+            ))
