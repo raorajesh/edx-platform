@@ -66,7 +66,9 @@ class TestBulkAssertionTestCase(BulkAssertionTest):
         assertion, args = assertion_tuple[0], assertion_tuple[1:]
         for count, argument in enumerate(args):
             if argument in ASSERTION_METHODS_DICT:
+                args_list = list(args)
                 args[count] = ASSERTION_METHODS_DICT[argument]
+                args = tuple(args_list)
         getattr(self, assertion)(*args)
 
     def _raw_assert(self, assertion_name, *args, **kwargs):
