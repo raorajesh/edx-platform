@@ -67,7 +67,7 @@ class TestBulkAssertionTestCase(BulkAssertionTest):
         for count, argument in enumerate(args):
             if argument in ASSERTION_METHODS_DICT:
                 args_list = list(args)
-                args[count] = ASSERTION_METHODS_DICT[argument]
+                args_list[count] = ASSERTION_METHODS_DICT[argument]
                 args = tuple(args_list)
         getattr(self, assertion)(*args)
 
