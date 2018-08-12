@@ -64,11 +64,11 @@ class TestBulkAssertionTestCase(BulkAssertionTest):
         Run the supplied tuple of (assertion, *args) as a method on this class.
         """
         assertion, args = assertion_tuple[0], assertion_tuple[1:]
-        for count, argument in enumerate(args):
-            if argument in ASSERTION_METHODS_DICT:
-                args_list = list(args)
+        args_list = list(args)
+        for count, argument in enumerate(args_list):
+            if type(argument) == str and argument in ASSERTION_METHODS_DICT:
                 args_list[count] = ASSERTION_METHODS_DICT[argument]
-                args = tuple(args_list)
+        args = tuple(args_list)
         getattr(self, assertion)(*args)
 
     def _raw_assert(self, assertion_name, *args, **kwargs):
